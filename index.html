@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="EyeKey - XIAO ESP32C3와 OLED로 만든 눈 달린 키링. 제품 소개, 구매 안내, 펌웨어·매뉴얼 자료실, 교육 자료.">
+<meta property="og:title" content="EyeKey">
+<meta property="og:description" content="시선이 머무는 곳에, 눈 달린 키링">
+<meta property="og:image" content="img/pair.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1018'/%3E%3Crect x='8' y='9' width='6' height='13' rx='3' fill='%2322d3ee'/%3E%3Crect x='18' y='9' width='6' height='13' rx='3' fill='%2322d3ee'/%3E%3C/svg%3E">
+<title>EyeKey</title>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: 단일 페이지, 4개 화면(소개·구매·자료실·교육)을 해시로 전환. 제품 OLED의 검정 화면과 발광색에서 팔레트를 가져옴. */
+:root{
+  --bg:#0a1018; --surface:#111b27; --surface-2:#172435; --line:#243449;
+  --fg:#e8f0f8; --muted:#93a5b9; --accent:#22d3ee; --accent-ink:#04222a;
+  --warm:#f2d83a; --ok:#4ade80; --warn:#f2d83a;
+  --ring:#e6edf3; --foot:#f28c1e; --bezel:#cfd8e0;
+  --case-blue:#2f7fe0; --case-green:#2fa77a;
+  --font-display:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --font-body:'Noto Sans KR',system-ui,-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  --radius:14px;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf1f7; --line:#d4dfea;
+    --fg:#0e1a26; --muted:#52667b; --accent:#0a7f95; --accent-ink:#ffffff;
+    --warm:#8a6d00; --ok:#17803d; --warn:#8a6d00; --ring:#9fb0c0;
+    color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#f5f8fb; --surface:#ffffff; --surface-2:#eaf1f7; --line:#d4dfea;
+  --fg:#0e1a26; --muted:#52667b; --accent:#0a7f95; --accent-ink:#ffffff;
+  --warm:#8a6d00; --ok:#17803d; --warn:#8a6d00; --ring:#9fb0c0;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font:400 17px/1.8 var(--font-body);word-break:keep-all;overflow-wrap:break-word;-webkit-font-smoothing:antialiased;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.wrap{max-width:1040px;margin:0 auto}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;line-height:1.35;letter-spacing:-.02em;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.1rem,7vw,3.6rem);letter-spacing:-.01em}
+h2{font-size:clamp(1.5rem,4.5vw,2.1rem)}
+h3{font-size:1.2rem}
+p{margin:0}
+h1{font-weight:700}
+.muted{color:var(--muted)}
+.eyebrow{font:700 .8rem/1.4 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+section{padding-block:clamp(36px,7vw,68px)}
+.sec-head{display:grid;gap:10px;margin-bottom:28px;max-width:60ch}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);
+  margin-inline:calc(-1*max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px}
+.logo{display:flex;align-items:center;gap:8px;font:700 1.4rem/1 var(--font-display);letter-spacing:-.02em;color:var(--fg);text-decoration:none}
+.logo svg{width:30px;height:24px}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+nav a{color:var(--muted);text-decoration:none;font-weight:500;font-size:.95rem;padding:8px 11px;border-radius:999px;white-space:nowrap}
+nav a[aria-current="page"]{color:var(--accent-ink);background:var(--accent)}
+nav a:not([aria-current="page"]):hover{color:var(--fg);background:var(--surface-2)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:500 1rem var(--font-body);text-decoration:none;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.small{min-height:36px;padding:0 14px;font-size:.88rem}
+.btn[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.chip{display:inline-block;font:700 .75rem/1 var(--font-body);padding:5px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted);letter-spacing:.03em}
+.chip.ok{color:var(--ok)} .chip.wip{color:var(--warn)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.05fr 1fr;gap:clamp(24px,5vw,56px);align-items:center;padding-top:clamp(28px,6vw,56px)}
+.hero-copy{display:grid;gap:20px;min-width:0}
+.hero-copy p.lead{font-size:1.1rem;color:var(--muted);max-width:44ch}
+.hero-copy h1 em{font-style:normal;color:var(--accent)}
+.demo{display:grid;gap:16px;justify-items:center;min-width:0}
+.fob{--case:var(--case-blue);position:relative;width:min(70vw,320px);margin:46px 8% 20px;aspect-ratio:57/45.05}
+.fob[data-color="green"]{--case:var(--case-green)}
+.ring{position:absolute;left:50%;top:-34px;width:64px;height:48px;margin-left:-32px;border:10px solid var(--ring);border-bottom:0;border-radius:20px 20px 0 0}
+.ear{position:absolute;top:20%;width:11%;height:34%;background:var(--case);border-radius:14px;filter:brightness(.92)}
+.ear.l{left:-6%}.ear.r{right:-6%}
+.feet{position:absolute;left:0;right:0;bottom:-5%;display:flex;justify-content:space-between;padding-inline:19%}
+.feet span{display:flex;gap:2px}
+.feet i{width:clamp(14px,5vw,22px);height:clamp(10px,3vw,14px);background:var(--foot);border-radius:8px}
+.case{position:relative;width:100%;height:100%;background:var(--case);border-radius:17%/21%;display:grid;place-items:center;box-shadow:0 18px 40px -18px #000a, inset 0 -6px 0 #0003}
+.screen{width:86%;aspect-ratio:256/188;background:#02050a;border-radius:10px;overflow:hidden;box-shadow:0 0 0 3px var(--bezel)}
+.screen canvas{width:100%;height:100%;display:block}
+.ctrl{display:grid;gap:10px;justify-items:center;width:100%}
+.pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.pill{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 13px;font:500 .88rem var(--font-body);cursor:pointer;min-height:36px}
+.pill[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.swatch{display:inline-flex;align-items:center;gap:7px}
+.swatch i{width:14px;height:14px;border-radius:50%;display:inline-block}
+.hint{font-size:.88rem;color:var(--muted)}
+
+/* photos */
+.photos{display:grid;grid-template-columns:2.11fr 1.59fr .51fr;gap:12px;align-items:start}
+figure{margin:0;display:grid;gap:8px;min-width:0}
+figure img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);display:block;background:var(--surface)}
+.photos img{height:auto}
+figcaption{font-size:.9rem;color:var(--muted)}
+
+/* features */
+.grid{display:grid;gap:14px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g2{grid-template-columns:repeat(2,1fr)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:grid;gap:8px;align-content:start;min-width:0}
+.card p{color:var(--muted);font-size:.95rem}
+.card .top-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+
+.design{display:grid;grid-template-columns:1.2fr 1fr;gap:clamp(20px,4vw,44px);align-items:center}
+.design figure{background:#f6f7f9;border-radius:var(--radius);padding:12px}
+.design img{height:auto;object-fit:contain;background:transparent}
+/* video */
+.video{border-radius:var(--radius);overflow:hidden;background:#000;border:1px solid var(--line)}
+.video video{width:100%;display:block;aspect-ratio:16/9}
+
+/* table */
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:520px;font-size:.95rem}
+th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child th,tr:last-child td{border-bottom:0}
+thead th{font:700 .8rem var(--font-body);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+tbody th{font-weight:500;color:var(--muted);width:30%}
+.yes{color:var(--ok);font-weight:700}
+
+.cta{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:clamp(24px,5vw,44px);display:grid;gap:16px;justify-items:start}
+.cta h2{max-width:20ch}
+
+/* buy */
+.buy{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(18px,4vw,26px);display:grid;gap:16px;min-width:0}
+.price{font:700 1.9rem/1.2 var(--font-display)}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:14px;counter-reset:s}
+.steps li{display:grid;grid-template-columns:34px 1fr;gap:12px;counter-increment:s}
+.steps li::before{content:counter(s);width:34px;height:34px;border-radius:50%;background:var(--surface-2);color:var(--accent);display:grid;place-items:center;font:700 .95rem var(--font-body)}
+.steps b{display:block;font-weight:700}
+.steps span{color:var(--muted);font-size:.92rem}
+.kv{display:grid;gap:10px}
+.kv .item{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--surface-2);border-radius:12px;padding:12px 14px}
+.kv .item div{min-width:0}
+.kv small{display:block;color:var(--muted);font-size:.78rem}
+.kv strong{font:700 1.05rem var(--font-body);letter-spacing:.01em;overflow-wrap:anywhere}
+label{display:grid;gap:6px;font-size:.9rem;font-weight:500}
+input,textarea{font:400 1rem var(--font-body);color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:90px}
+.out{font:400 .92rem/1.7 var(--font-body);min-height:170px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 18px}
+details+details{margin-top:8px}
+summary{cursor:pointer;padding:15px 0;font-weight:500;list-style-position:inside}
+details p{padding-bottom:16px;color:var(--muted);font-size:.95rem}
+
+/* resources */
+.files{display:grid;gap:10px}
+.file{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.file>div{min-width:0}
+.file h3{font:700 1rem/1.4 var(--font-body);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.file p{color:var(--muted);font-size:.9rem}
+.group{display:grid;gap:12px}
+.group+.group{margin-top:30px}
+.group>h2{font-size:1.3rem}
+
+/* learn */
+.path{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.lvl{font:700 .8rem var(--font-body);color:var(--accent);letter-spacing:.05em}
+.card ul{margin:0;padding-left:1.1em;color:var(--muted);font-size:.93rem}
+.lesson{display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:start;padding-block:22px;border-top:1px solid var(--line)}
+.lesson:first-of-type{border-top:0}
+.lesson>div{display:grid;gap:10px;min-width:0}
+.code{position:relative;min-width:0}
+pre{margin:0;overflow-x:auto;background:#060b12;color:#d6e4f2;border-radius:12px;padding:16px;font:400 .82rem/1.65 var(--font-mono);border:1px solid var(--line)}
+.code .btn{position:absolute;top:8px;right:8px}
+
+footer{border-top:1px solid var(--line);padding-block:32px 40px;color:var(--muted);font-size:.9rem}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 32px;justify-content:space-between}
+footer b{color:var(--fg)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+[data-view]{display:none}
+[data-view].on{display:block}
+
+@media (max-width:820px){
+  .hero,.buy,.lesson,.design{grid-template-columns:1fr}
+  .g3,.path{grid-template-columns:1fr}
+  .photos{grid-template-columns:1fr 1fr}
+  .photos figure:first-child{grid-column:1/-1}
+  .photos figure:first-child img{aspect-ratio:2/1}
+  .photos figure img{aspect-ratio:1}
+}
+@media (max-width:520px){
+  table{min-width:0;font-size:.88rem}
+  th,td{padding:10px 11px}
+  .g2,.fields{grid-template-columns:1fr}
+  .file{grid-template-columns:1fr}
+  .logo span{display:none}
+  .photos figure img{aspect-ratio:4/5}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.toast{transition:none}}
+</style>
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap">
+  <a class="logo" href="#home" aria-label="EyeKey 홈">
+    <svg viewBox="0 0 30 24" aria-hidden="true"><rect x="1" y="1" width="28" height="22" rx="6" fill="none" stroke="currentColor" stroke-width="2"/><rect x="8" y="7" width="4.5" height="9" rx="2.2" fill="var(--accent)"/><rect x="17.5" y="7" width="4.5" height="9" rx="2.2" fill="var(--accent)"/></svg>
+    <span>EyeKey</span>
+  </a>
+  <nav aria-label="주 메뉴">
+    <a href="#home">소개</a><a href="#buy">구매</a><a href="#resources">자료실</a><a href="#learn">교육</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+
+<!-- ============ 소개 ============ -->
+<div data-view="home">
+  <div class="hero">
+    <div class="hero-copy">
+      <span class="eyebrow">XIAO ESP32C3 · OLED 키링 · 57.0 × 45.05 mm</span>
+      <h1>시선이 머무는 곳에,<br><em>눈 달린 키링</em></h1>
+      <p class="lead">가방 끝에서 눈을 깜빡이고, 가끔 윙크도 하는 작은 키링. 조립 없이 바로 쓰고, 펌웨어와 코드는 열어두었습니다.</p>
+      <div class="row">
+        <a class="btn primary" href="#buy">구매 문의</a>
+        <a class="btn" href="#resources">자료실</a>
+      </div>
+    </div>
+    <div class="demo">
+      <div class="fob" id="fob" data-color="blue">
+        <div class="ring"></div><div class="ear l"></div><div class="ear r"></div>
+        <div class="case" id="case"><div class="screen"><canvas id="eyes" width="256" height="188" aria-label="EyeKey 화면 미리보기"></canvas></div></div>
+        <div class="feet"><span><i></i><i></i><i></i></span><span><i></i><i></i><i></i></span></div>
+      </div>
+      <div class="ctrl">
+        <div class="pills" id="exprs" role="group" aria-label="표정 선택"></div>
+        <div class="pills" id="colors" role="group" aria-label="케이스 색상">
+          <button class="pill swatch" data-color="blue" aria-pressed="true"><i style="background:var(--case-blue)"></i>블루</button>
+          <button class="pill swatch" data-color="green" aria-pressed="false"><i style="background:var(--case-green)"></i>그린</button>
+        </div>
+        <p class="hint">표정을 눌러 보고, 화면 위로 마우스나 손가락을 움직이면 눈이 따라옵니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <div class="photos">
+      <figure><img src="img/pair.jpg" alt="블루와 그린 EyeKey 프로토타입 두 개" width="705" height="334"><figcaption>프로토타입 블루 · 그린</figcaption></figure>
+      <figure><img src="img/dark.jpg" alt="어두운 곳에서 빛나는 EyeKey 두 개" width="969" height="610"><figcaption>어두운 곳에서 더 또렷하게</figcaption></figure>
+      <figure><img src="img/hand.jpg" alt="손에 든 블루 EyeKey 키링" width="284" height="556"><figcaption>손에 쏙 들어오는 크기</figcaption></figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="design">
+      <figure><img src="img/case-design.png" alt="EyeKey 케이스 3D 설계. 파란 케이스 앞면과 와이어프레임" width="590" height="239"></figure>
+      <div class="sec-head" style="margin:0"><span class="eyebrow">Case design</span><h2>손바닥만 한, 거의 정사각형</h2>
+        <p class="muted">가로 57.0 mm, 세로 45.05 mm. 양옆의 귀와 아래쪽 발이 로봇 같은 표정을 만들고, 위쪽 고리에 체인을 겁니다. 케이스는 3D 프린터로 출력합니다.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Features</span><h2>작지만 할 수 있는 것들</h2>
+      <p class="muted">구현 상태를 그대로 표시합니다. 개발 중인 기능은 펌웨어 업데이트로 추가됩니다.</p></div>
+    <div class="grid g3">
+      <div class="card"><div class="top-row"><h3>표정 표현</h3><span class="chip ok">구현</span></div><p>기본, 하트, 윙크, 웃음, 놀람, 화남 등. 깜빡임은 무작위 간격으로 자연스럽게.</p></div>
+      <div class="card"><div class="top-row"><h3>시계 · 타이머</h3><span class="chip wip">개발 중</span></div><p>눈 대신 시간과 날짜, 타이머를 표시합니다.</p></div>
+      <div class="card"><div class="top-row"><h3>텍스트 메시지</h3><span class="chip wip">개발 중</span></div><p>“안녕!” 같은 짧은 문구를 화면에 띄웁니다.</p></div>
+      <div class="card"><div class="top-row"><h3>움직임 반응</h3><span class="chip wip">개발 중</span></div><p>흔들면 표정이 바뀌는 IMU 연동을 준비하고 있습니다.</p></div>
+      <div class="card"><div class="top-row"><h3>블루투스 설정</h3><span class="chip wip">개발 중</span></div><p>스마트폰에서 표정과 문구를 바꾸는 BLE 연결입니다.</p></div>
+      <div class="card"><div class="top-row"><h3>USB-C 연결</h3><span class="chip ok">구현</span></div><p>XIAO 보드의 USB-C 포트로 전원 공급과 펌웨어 업로드를 합니다.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Video</span><h2>EyeKey를 영상으로</h2></div>
+    <div class="video"><video controls preload="metadata" poster="img/poster.jpg" playsinline><source src="eyekey.mp4" type="video/mp4">영상을 재생할 수 없는 브라우저입니다.</video></div>
+    <p class="hint" style="margin-top:10px">소개 영상의 제품 모습은 컨셉 이미지입니다. 실제 제품은 위 사진의 3D 프린트 케이스입니다.</p>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Why EyeKey</span><h2>직접 만드는 키링 버디와 무엇이 다른가</h2>
+      <p class="muted">ESP32와 OLED로 만드는 DIY 프로젝트는 훌륭한 출발점입니다. EyeKey는 그 다음 단계를 채웁니다.</p></div>
+    <div class="tbl"><table>
+      <thead><tr><th></th><th>DIY 프로젝트</th><th>EyeKey</th></tr></thead>
+      <tbody>
+        <tr><th>준비</th><td>부품 구매, 납땜, 케이스 출력</td><td class="yes">완제품으로 받아 바로 사용</td></tr>
+        <tr><th>안내 문서</th><td>제작기 중심</td><td class="yes">한국어 매뉴얼 · 펌웨어 업데이트 안내</td></tr>
+        <tr><th>펌웨어</th><td>코드를 직접 내려받아 빌드</td><td class="yes">버전별 배포와 변경 내역</td></tr>
+        <tr><th>학습</th><td>스스로 응용</td><td class="yes">단계별 교육 자료와 예제 코드</td></tr>
+        <tr><th>케이스</th><td>각자 출력</td><td class="yes">블루 · 그린 색상 선택</td></tr>
+        <tr><th>문의</th><td>댓글 · 커뮤니티</td><td class="yes">전화 · 메일 직접 응대</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <section>
+    <div class="sec-head"><span class="eyebrow">Spec</span><h2>프로토타입 사양</h2></div>
+    <div class="tbl"><table><tbody>
+      <tr><th>컨트롤러</th><td>Seeed Studio XIAO ESP32C3 (Wi-Fi · Bluetooth LE)</td></tr>
+      <tr><th>디스플레이</th><td>OLED, I2C 연결</td></tr>
+      <tr><th>케이스</th><td>3D 프린트, 블루 · 그린</td></tr>
+      <tr><th>키링</th><td>체인과 스위블 고리 포함</td></tr>
+      <tr><th>전원 · 업로드</th><td>USB-C</td></tr>
+      <tr><th>크기</th><td>57.0 × 45.05 mm</td></tr>
+      <tr><th>개발 환경</th><td>VS Code + ESP-IDF (오픈 코드)</td></tr>
+    </tbody></table></div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <span class="eyebrow">Pre-order</span>
+      <h2>프로토타입 한정으로 판매합니다</h2>
+      <p class="muted">색상과 수량을 정해 문의해 주세요. 입금 확인 후 제작해 보내드립니다.</p>
+      <a class="btn primary" href="#buy">구매 안내 보기</a>
+    </div>
+  </section>
+</div>
+
+<!-- ============ 구매 ============ -->
+<div data-view="buy">
+  <section>
+    <div class="sec-head"><span class="eyebrow">Buy</span><h1 style="font-size:clamp(1.9rem,6vw,2.7rem)">구매 안내</h1>
+      <p class="muted">온라인 결제 없이, 계좌 입금으로 판매합니다. 아래 주문서를 만들어 문자나 메일로 보내 주세요.</p></div>
+
+    <div class="buy">
+      <div class="panel">
+        <div><span class="chip">EyeKey 프로토타입</span></div>
+        <div class="price" id="price">가격 문의</div>
+        <p class="muted">XIAO ESP32C3 · OLED · 3D 프린트 케이스 · 키링 체인. 블루, 그린 중 선택.</p>
+        <h3>구매 순서</h3>
+        <ol class="steps">
+          <li><div><b>주문서 보내기</b><span>오른쪽에서 주문서를 만들고 문자 또는 메일로 보냅니다.</span></div></li>
+          <li><div><b>금액 안내와 입금</b><span>수량과 배송비를 안내받은 뒤 아래 계좌로 입금합니다.</span></div></li>
+          <li><div><b>제작 · 발송</b><span>입금 확인 후 제작해 보내드립니다.</span></div></li>
+        </ol>
+      </div>
+
+      <div class="panel">
+        <h3>주문서 만들기</h3>
+        <div class="pills" id="orderColor" role="group" aria-label="색상">
+          <button class="pill swatch" data-color="블루" aria-pressed="true"><i style="background:var(--case-blue)"></i>블루</button>
+          <button class="pill swatch" data-color="그린" aria-pressed="false"><i style="background:var(--case-green)"></i>그린</button>
+        </div>
+        <div class="fields">
+          <label for="oqty">수량<input id="oqty" type="number" min="1" max="99" value="1" inputmode="numeric"></label>
+          <label for="oname">받는 분<input id="oname" autocomplete="name" placeholder="홍길동"></label>
+          <label for="otel">연락처<input id="otel" type="tel" autocomplete="tel" placeholder="010-0000-0000"></label>
+          <label for="oaddr">배송지<input id="oaddr" autocomplete="street-address" placeholder="주소"></label>
+        </div>
+        <label for="omemo">요청사항<textarea id="omemo" style="min-height:64px" placeholder="선택 입력"></textarea></label>
+        <label for="oout">보낼 내용<textarea id="oout" class="out" readonly></textarea></label>
+        <div class="row">
+          <button class="btn primary" id="ocopy" type="button">주문서 복사</button>
+          <a class="btn" id="omail" href="#">메일 앱으로 열기</a>
+        </div>
+        <p class="hint">이 화면에서 주문이 접수되지는 않습니다. 복사한 내용을 문자나 메일로 보내 주세요.</p>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="grid g2">
+      <div class="panel">
+        <h3>입금 계좌</h3>
+        <div class="kv">
+          <div class="item"><div><small>은행</small><strong>카카오뱅크</strong></div></div>
+          <div class="item"><div><small>계좌번호</small><strong>3333-34-4892029</strong></div><button class="btn small" data-copy="3333-34-4892029" type="button">복사</button></div>
+          <div class="item" id="holderRow" hidden><div><small>예금주</small><strong id="holder"></strong></div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3>연락처</h3>
+        <div class="kv">
+          <div class="item"><div><small>전화 · 문자</small><strong>010-2484-3208</strong></div><div class="row"><button class="btn small" data-copy="010-2484-3208" type="button">복사</button><a class="btn small" href="tel:01024843208">전화</a></div></div>
+          <div class="item"><div><small>메일</small><strong>jyu-eyekey@nate.com</strong></div><div class="row"><button class="btn small" data-copy="jyu-eyekey@nate.com" type="button">복사</button><a class="btn small" href="mailto:jyu-eyekey@nate.com">메일</a></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="sec-head"><h2>자주 묻는 질문</h2></div>
+    <details><summary>가격은 어떻게 되나요?</summary><p>프로토타입 한정 판매라 주문 시 개별 안내드립니다. 수량이 많은 단체 주문도 문의해 주세요.</p></details>
+    <details><summary>입금은 언제 하나요?</summary><p>주문서를 보내시면 금액과 배송비를 안내드립니다. 안내받은 금액을 입금하시면 확인 후 제작을 시작합니다.</p></details>
+    <details><summary>펌웨어는 어떻게 바꾸나요?</summary><p>USB-C로 컴퓨터에 연결해 VS Code의 ESP-IDF 확장에서 올립니다. 자료실에 단계별 안내가 있습니다.</p></details>
+    <details><summary>배터리가 들어 있나요?</summary><p>배터리 사양은 확정 중입니다. 주문 시 현재 구성을 알려드립니다.</p></details>
+    <details><summary>학교나 동아리 수업에 쓸 수 있나요?</summary><p>교육 페이지의 자료를 수업에 사용하셔도 됩니다. 단체 구매와 수업 문의는 전화나 메일로 주세요.</p></details>
+  </section>
+</div>
+
+<!-- ============ 자료실 ============ -->
+<div data-view="resources">
+  <section>
+    <div class="sec-head"><span class="eyebrow">Resources</span><h1 style="font-size:clamp(1.9rem,6vw,2.7rem)">자료실</h1>
+      <p class="muted">펌웨어와 매뉴얼을 내려받는 곳입니다. 파일이 준비되면 버튼이 활성화됩니다.</p></div>
+    <div id="files"></div>
+
+    <div class="group" style="margin-top:36px">
+      <h2>펌웨어 올리는 방법</h2>
+      <ol class="steps">
+        <li><div><b>VS Code와 ESP-IDF 설치</b><span>VS Code에서 “Espressif IDF” 확장을 설치하고, 설정 마법사에서 ESP-IDF v5.4 이상을 설치합니다.</span></div></li>
+        <li><div><b>프로젝트 열기</b><span>내려받은 펌웨어 폴더를 VS Code로 열고, 아래쪽 상태 표시줄에서 대상 칩을 esp32c3로 선택합니다.</span></div></li>
+        <li><div><b>USB-C로 연결</b><span>상태 표시줄에서 포트를 고릅니다. 포트가 보이지 않으면 보드의 B(BOOT) 버튼을 누른 채 USB를 꽂고, 연결 후 버튼을 뗍니다.</span></div></li>
+        <li><div><b>빌드 · 업로드</b><span>상태 표시줄의 Build, Flash를 차례로 누릅니다. 터미널에서는 <code>idf.py set-target esp32c3</code> 다음에 <code>idf.py build flash monitor</code>를 실행해도 됩니다.</span></div></li>
+      </ol>
+    </div>
+  </section>
+</div>
+
+<!-- ============ 교육 ============ -->
+<div data-view="learn">
+  <section>
+    <div class="sec-head"><span class="eyebrow">Learn</span><h1 style="font-size:clamp(1.9rem,6vw,2.7rem)">EyeKey로 배우는 임베디드</h1>
+      <p class="muted">눈 하나 그리는 것에서 시작해 센서와 블루투스까지. 화면에 바로 결과가 보여서 입문에 알맞습니다.</p></div>
+    <div class="path">
+      <div class="card"><span class="lvl">LEVEL 1 · 입문</span><h3>눈 그리기</h3><ul><li>VS Code · ESP-IDF 시작</li><li>I2C와 OLED 좌표</li><li>깜빡임 만들기</li></ul></div>
+      <div class="card"><span class="lvl">LEVEL 2 · 기초</span><h3>표정 만들기</h3><ul><li>표정을 함수로 나누기</li><li>상태(state) 관리</li><li>버튼 입력으로 전환</li></ul></div>
+      <div class="card"><span class="lvl">LEVEL 3 · 응용</span><h3>센서와 무선</h3><ul><li>IMU 움직임 감지</li><li>Bluetooth LE 통신</li><li>나만의 표정 추가</li></ul></div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="sec-head"><h2>예제 코드</h2><p class="muted">XIAO ESP32C3, SSD1306 호환 OLED(128×64, I2C), ESP-IDF v5.4 이상 기준입니다. SDA는 D4, SCL은 D5에 연결합니다.</p></div>
+
+    <div class="lesson">
+      <div><span class="lvl">LESSON 1</span><h3>화면에 눈 두 개 띄우기</h3><p class="muted">1비트 프레임버퍼에 둥근 사각형 두 개를 그려 OLED로 보냅니다. 크기와 위치를 바꿔 보며 좌표 감각을 익힙니다. 코드는 main/main.c에 넣습니다.</p></div>
+      <div class="code"><button class="btn small" data-copy-code type="button">복사</button><pre><code>#include &lt;string.h&gt;
+#include "driver/i2c_master.h"
+#include "esp_lcd_panel_io.h"
+#include "esp_lcd_panel_ops.h"
+#include "esp_lcd_panel_vendor.h"
+#include "esp_random.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+
+#define SDA_GPIO 6   // XIAO ESP32C3 D4
+#define SCL_GPIO 7   // XIAO ESP32C3 D5
+#define W 128
+#define H 64
+
+static uint8_t fb[W * H / 8];          // 1비트 프레임버퍼
+static esp_lcd_panel_handle_t panel;
+
+static void px(int x, int y) {
+    if (x &lt; 0 || x &gt;= W || y &lt; 0 || y &gt;= H) return;
+    fb[(y &gt;&gt; 3) * W + x] |= 1 &lt;&lt; (y &amp; 7);
+}
+
+static void rbox(int x, int y, int w, int h, int r) {  // 둥근 사각형
+    if (r &gt; h / 2) r = h / 2;
+    for (int j = 0; j &lt; h; j++) for (int i = 0; i &lt; w; i++) {
+        int dx = i &lt; r ? r - 1 - i : (i &gt;= w - r ? i - (w - r) : 0);
+        int dy = j &lt; r ? r - 1 - j : (j &gt;= h - r ? j - (h - r) : 0);
+        if (dx * dx + dy * dy &lt;= r * r) px(x + i, y + j);
+    }
+}
+
+static void draw_eyes(int h) {
+    memset(fb, 0, sizeof(fb));
+    int y = 32 - h / 2;
+    rbox(29, y, 22, h, 8);             // 왼쪽 눈
+    rbox(77, y, 22, h, 8);             // 오른쪽 눈
+    esp_lcd_panel_draw_bitmap(panel, 0, 0, W, H, fb);
+}
+
+static void oled_init(void) {
+    i2c_master_bus_config_t bus_cfg = {
+        .clk_source = I2C_CLK_SRC_DEFAULT, .i2c_port = I2C_NUM_0,
+        .sda_io_num = SDA_GPIO, .scl_io_num = SCL_GPIO,
+        .glitch_ignore_cnt = 7, .flags.enable_internal_pullup = true,
+    };
+    i2c_master_bus_handle_t bus;
+    ESP_ERROR_CHECK(i2c_new_master_bus(&amp;bus_cfg, &amp;bus));
+
+    esp_lcd_panel_io_i2c_config_t io_cfg = {
+        .dev_addr = 0x3C, .scl_speed_hz = 400000,
+        .control_phase_bytes = 1, .dc_bit_offset = 6,
+        .lcd_cmd_bits = 8, .lcd_param_bits = 8,
+    };
+    esp_lcd_panel_io_handle_t io;
+    ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(bus, &amp;io_cfg, &amp;io));
+
+    esp_lcd_panel_ssd1306_config_t ssd = { .height = H };
+    esp_lcd_panel_dev_config_t cfg = {
+        .bits_per_pixel = 1, .reset_gpio_num = -1, .vendor_config = &amp;ssd,
+    };
+    ESP_ERROR_CHECK(esp_lcd_new_panel_ssd1306(io, &amp;cfg, &amp;panel));
+    esp_lcd_panel_reset(panel);
+    esp_lcd_panel_init(panel);
+    esp_lcd_panel_disp_on_off(panel, true);
+}
+
+void app_main(void) {
+    oled_init();
+    draw_eyes(28);
+}</code></pre></div>
+    </div>
+
+    <div class="lesson">
+      <div><span class="lvl">LESSON 2</span><h3>눈 깜빡이기</h3><p class="muted">눈의 높이를 줄였다 늘리면 깜빡임이 됩니다. 간격을 무작위로 주면 살아 있는 느낌이 납니다. 레슨 1의 app_main을 아래로 바꿉니다.</p></div>
+      <div class="code"><button class="btn small" data-copy-code type="button">복사</button><pre><code>void app_main(void) {
+    oled_init();
+    while (1) {
+        for (int h = 28; h &gt;= 2; h -= 6) { draw_eyes(h); vTaskDelay(pdMS_TO_TICKS(15)); }
+        for (int h = 2; h &lt;= 28; h += 6)  { draw_eyes(h); vTaskDelay(pdMS_TO_TICKS(15)); }
+        draw_eyes(28);
+        vTaskDelay(pdMS_TO_TICKS(1500 + esp_random() % 2500));
+    }
+}</code></pre></div>
+    </div>
+
+    <div class="lesson">
+      <div><span class="lvl">LESSON 3</span><h3>숙제: 나만의 표정</h3><p class="muted">윙크, 하트, 졸린 눈 중 하나를 골라 함수로 만들어 보세요. 완성한 코드는 메일로 보내 주시면 자료실 소개를 검토합니다.</p></div>
+      <div class="card"><h3>생각해 볼 점</h3><ul><li>눈의 모양은 어떤 도형으로 만들까요?</li><li>표정이 바뀔 때 어색하지 않게 하려면?</li><li>버튼 한 번에 표정이 하나씩 바뀌게 하려면?</li></ul></div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="cta">
+      <span class="eyebrow">For Schools &amp; Makers</span>
+      <h2>학교, 동아리, 메이커 수업에 쓰고 싶다면</h2>
+      <p class="muted">단체 구매와 수업 운영은 전화나 메일로 문의해 주세요.</p>
+      <a class="btn primary" href="#buy">연락처 보기</a>
+    </div>
+  </section>
+</div>
+
+</main>
+
+<footer><div class="wrap">
+  <div><b>EyeKey</b><br>시선이 머무는 곳에, 키링<br>XIAO ESP32C3 · OLED</div>
+  <div>전화 010-2484-3208<br>메일 jyu-eyekey@nate.com<br>카카오뱅크 3333-34-4892029</div>
+  <div>© 2026 EyeKey</div>
+</div></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ---------- 설정: 여기만 고치면 됩니다 ---------- */
+var CONFIG = {
+  price: '',            // 예: '39,000원' 입력하면 가격이 표시됩니다
+  holder: '',           // 예금주 이름을 입력하면 표시됩니다
+  files: [
+    { group:'펌웨어', title:'EyeKey 펌웨어', desc:'표정과 깜빡임 기본 펌웨어 (ESP-IDF 프로젝트)', type:'ZIP', url:'' },
+    { group:'펌웨어', title:'펌웨어 바이너리', desc:'빌드 없이 바로 올리는 .bin 파일', type:'BIN', url:'' },
+    { group:'펌웨어', title:'변경 내역', desc:'버전별 추가 기능과 수정 사항', type:'TXT', url:'' },
+    { group:'매뉴얼', title:'사용 설명서', desc:'처음 켜는 방법, 표정 바꾸기, 주의 사항', type:'PDF', url:'' },
+    { group:'매뉴얼', title:'펌웨어 업데이트 가이드', desc:'VS Code와 ESP-IDF 설정부터 업로드까지', type:'PDF', url:'' },
+    { group:'하드웨어', title:'케이스 3D 모델', desc:'3D 프린터로 출력하는 케이스 파일', type:'STL', url:'' },
+    { group:'하드웨어', title:'배선도 · 핀맵', desc:'XIAO ESP32C3와 OLED 연결', type:'PDF', url:'' }
+  ]
+};
+
+/* ---------- 유틸 ---------- */
+var $ = function(s, r){ return (r||document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r||document).querySelectorAll(s)); };
+var toastEl = $('#toast'), toastT;
+function toast(msg){ toastEl.textContent = msg; toastEl.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(function(){ toastEl.classList.remove('on'); }, 1800); }
+function copyText(text, msg){
+  function fallback(){
+    var ta = document.createElement('textarea'); ta.value = text; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta); toast(ok ? (msg||'복사했습니다') : '길게 눌러 직접 복사해 주세요');
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(function(){ toast(msg||'복사했습니다'); }, fallback);
+  } else fallback();
+}
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-copy]'); if(b){ copyText(b.getAttribute('data-copy')); return; }
+  var c = e.target.closest('[data-copy-code]'); if(c){ copyText(c.parentNode.querySelector('code').textContent, '코드를 복사했습니다'); }
+});
+
+/* ---------- 화면 전환 ---------- */
+var VIEWS = ['home','buy','resources','learn'];
+function route(){
+  var h = (location.hash||'').replace('#','');
+  if(VIEWS.indexOf(h) < 0) h = 'home';
+  $$('[data-view]').forEach(function(v){ v.classList.toggle('on', v.getAttribute('data-view') === h); });
+  $$('nav a').forEach(function(a){ if(a.getAttribute('href') === '#'+h) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  window.scrollTo(0,0);
+  if(h === 'home') startEyes(); else stopEyes();
+}
+window.addEventListener('hashchange', route);
+
+/* ---------- 눈 미리보기 ---------- */
+var canvas = $('#eyes'), ctx = canvas.getContext('2d');
+var EXPRS = [['basic','기본'],['heart','하트'],['wink','윙크'],['smile','웃음'],['wow','놀람'],['angry','화남'],['sleepy','졸림'],['star','별']];
+var COLORS = { blue:'#22d3ee', green:'#f5e000' };
+var S = { expr:'basic', color:'blue', blink:0, blinkStart:-1, nextBlink:1500, lx:0, ly:0, tx:0, ty:0 };
+var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+var raf = 0;
+
+function heart(cx, cy, s){
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s*0.9);
+  ctx.bezierCurveTo(cx - s*1.5, cy - s*0.1, cx - s*0.8, cy - s*1.2, cx, cy - s*0.4);
+  ctx.bezierCurveTo(cx + s*0.8, cy - s*1.2, cx + s*1.5, cy - s*0.1, cx, cy + s*0.9);
+  ctx.fill();
+}
+function star(cx, cy, R){
+  ctx.beginPath();
+  for(var i=0;i<10;i++){ var r = i%2 ? R*0.45 : R, a = -Math.PI/2 + i*Math.PI/5; ctx.lineTo(cx + Math.cos(a)*r, cy + Math.sin(a)*r); }
+  ctx.closePath(); ctx.fill();
+}
+function rbox(x, y, w, h, r){
+  r = Math.max(0, Math.min(r, h/2, w/2));
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+  ctx.fill();
+}
+function basicEye(cx, k){
+  var h = Math.max(2, 28 * (1 - S.blink)), w = 22;
+  rbox(cx - w/2 + S.lx, 32 - h/2 + S.ly, w, h, 8);
+  if(h > 14){ ctx.save(); ctx.fillStyle = '#02050a'; ctx.beginPath(); ctx.arc(cx + S.lx*1.4, 32 + S.ly*1.4, 2.6, 0, 7); ctx.fill(); ctx.restore(); }
+}
+function draw(){
+  var col = COLORS[S.color];
+  ctx.setTransform(2,0,0,2,0,30);
+  ctx.clearRect(0,-15,128,94);
+  ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineWidth = 4.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.shadowColor = col; ctx.shadowBlur = 7;
+  var L = 40, R = 88, e = S.expr;
+  if(e === 'basic'){ basicEye(L); basicEye(R); }
+  else if(e === 'heart'){ var p = 1 + (S.blink*-0.3); heart(L+S.lx, 32+S.ly, 11*p); heart(R+S.lx, 32+S.ly, 11*p); }
+  else if(e === 'wink'){ basicEye(L); ctx.beginPath(); ctx.moveTo(R-10+S.lx, 32); ctx.lineTo(R+10+S.lx, 32); ctx.stroke(); }
+  else if(e === 'smile'){ [L,R].forEach(function(cx){ ctx.beginPath(); ctx.arc(cx+S.lx, 38+S.ly, 11, Math.PI*1.12, Math.PI*1.88); ctx.stroke(); }); }
+  else if(e === 'wow'){ [L,R].forEach(function(cx){ ctx.beginPath(); ctx.arc(cx+S.lx, 32+S.ly, 13, 0, 7); ctx.fill(); ctx.save(); ctx.shadowBlur=0; ctx.fillStyle='#02050a'; ctx.beginPath(); ctx.arc(cx+S.lx*1.5, 32+S.ly*1.5, 4, 0, 7); ctx.fill(); ctx.restore(); }); }
+  else if(e === 'angry'){
+    ctx.beginPath(); ctx.moveTo(26,24+S.ly); ctx.lineTo(54,32+S.ly); ctx.lineTo(54,42+S.ly); ctx.lineTo(26,42+S.ly); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(102,24+S.ly); ctx.lineTo(74,32+S.ly); ctx.lineTo(74,42+S.ly); ctx.lineTo(102,42+S.ly); ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+  else if(e === 'sleepy'){ [L,R].forEach(function(cx){ ctx.beginPath(); ctx.moveTo(cx-11, 31); ctx.quadraticCurveTo(cx, 40, cx+11, 31); ctx.stroke(); }); }
+  else if(e === 'star'){ star(L+S.lx, 32+S.ly, 13); star(R+S.lx, 32+S.ly, 13); }
+}
+function loop(t){
+  if(!reduce){
+    if(S.blinkStart < 0 && t > S.nextBlink){ S.blinkStart = t; }
+    if(S.blinkStart >= 0){
+      var p = (t - S.blinkStart) / 200;
+      if(p >= 1){ S.blink = 0; S.blinkStart = -1; S.nextBlink = t + 1800 + Math.random()*2800; }
+      else S.blink = p < .5 ? p*2 : (1-p)*2;
+    }
+  }
+  S.lx += (S.tx - S.lx) * .15; S.ly += (S.ty - S.ly) * .15;
+  draw();
+  raf = requestAnimationFrame(loop);
+}
+function startEyes(){ if(!raf) raf = requestAnimationFrame(loop); }
+function stopEyes(){ if(raf){ cancelAnimationFrame(raf); raf = 0; } }
+document.addEventListener('visibilitychange', function(){ if(document.hidden) stopEyes(); else if(($('[data-view="home"]').classList.contains('on'))) startEyes(); });
+
+var exprBox = $('#exprs');
+EXPRS.forEach(function(x){
+  var b = document.createElement('button'); b.className = 'pill'; b.type = 'button'; b.textContent = x[1]; b.dataset.e = x[0];
+  b.setAttribute('aria-pressed', x[0] === S.expr ? 'true' : 'false'); exprBox.appendChild(b);
+});
+exprBox.addEventListener('click', function(e){
+  var b = e.target.closest('.pill'); if(!b) return; S.expr = b.dataset.e;
+  $$('.pill', exprBox).forEach(function(p){ p.setAttribute('aria-pressed', p === b ? 'true' : 'false'); });
+});
+function setColor(c){
+  S.color = c; $('#fob').dataset.color = c;
+  $$('#colors .pill').forEach(function(p){ p.setAttribute('aria-pressed', p.dataset.color === c ? 'true' : 'false'); });
+}
+$('#colors').addEventListener('click', function(e){ var b = e.target.closest('.pill'); if(b) setColor(b.dataset.color); });
+var demoEl = $('.demo');
+function look(ev){
+  var r = $('#fob').getBoundingClientRect();
+  var dx = (ev.clientX - (r.left + r.width/2)) / (r.width*1.2), dy = (ev.clientY - (r.top + r.height/2)) / (r.height*1.2);
+  S.tx = Math.max(-1, Math.min(1, dx)) * 6; S.ty = Math.max(-1, Math.min(1, dy)) * 4;
+}
+window.addEventListener('pointermove', look);
+window.addEventListener('pointerleave', function(){ S.tx = 0; S.ty = 0; });
+
+/* ---------- 구매: 주문서 ---------- */
+var oColor = '블루';
+$('#orderColor').addEventListener('click', function(e){
+  var b = e.target.closest('.pill'); if(!b) return; oColor = b.dataset.color;
+  $$('#orderColor .pill').forEach(function(p){ p.setAttribute('aria-pressed', p === b ? 'true' : 'false'); });
+  buildOrder();
+});
+function buildOrder(){
+  var q = Math.max(1, parseInt($('#oqty').value, 10) || 1);
+  var txt = '[EyeKey 주문 요청]\n색상: ' + oColor + '\n수량: ' + q + '개\n받는 분: ' + ($('#oname').value || '') + '\n연락처: ' + ($('#otel').value || '') + '\n배송지: ' + ($('#oaddr').value || '') + '\n요청사항: ' + ($('#omemo').value || '');
+  $('#oout').value = txt;
+  $('#omail').href = 'mailto:jyu-eyekey@nate.com?subject=' + encodeURIComponent('EyeKey 주문 요청') + '&body=' + encodeURIComponent(txt);
+}
+['#oqty','#oname','#otel','#oaddr','#omemo'].forEach(function(s){ $(s).addEventListener('input', buildOrder); });
+$('#ocopy').addEventListener('click', function(){ copyText($('#oout').value, '주문서를 복사했습니다'); });
+buildOrder();
+if(CONFIG.price) $('#price').textContent = CONFIG.price;
+if(CONFIG.holder){ $('#holder').textContent = CONFIG.holder; $('#holderRow').hidden = false; }
+
+/* ---------- 자료실 ---------- */
+(function(){
+  var groups = {}, order = [];
+  CONFIG.files.forEach(function(f){ if(!groups[f.group]){ groups[f.group] = []; order.push(f.group); } groups[f.group].push(f); });
+  var html = '';
+  order.forEach(function(g){
+    html += '<div class="group"><h2>' + g + '</h2><div class="files">';
+    groups[g].forEach(function(f){
+      var ready = !!f.url;
+      html += '<div class="file"><div><h3>' + f.title + ' <span class="chip">' + f.type + '</span>' + (ready ? '' : ' <span class="chip wip">준비 중</span>') + '</h3><p>' + f.desc + '</p></div>' +
+        (ready ? '<a class="btn small primary" href="' + f.url + '" target="_blank" rel="noopener" download>다운로드</a>' : '<span class="btn small" aria-disabled="true">준비 중</span>') + '</div>';
+    });
+    html += '</div></div>';
+  });
+  $('#files').innerHTML = html;
+})();
+
+route();
+</script>
+
+</body>
+</html>
