@@ -207,9 +207,14 @@ details p{padding-bottom:16px;color:var(--muted);font-size:.95rem}
 pre{margin:0;overflow-x:auto;background:#060b12;color:#d6e4f2;border-radius:12px;padding:16px;font:400 .82rem/1.65 var(--font-mono);border:1px solid var(--line)}
 .code .btn{position:absolute;top:8px;right:8px}
 
-footer{padding-block:40px 48px;color:var(--muted);font-size:1rem;line-height:1.9}
-footer .wrap{display:grid;grid-template-columns:1.2fr 1fr auto;gap:20px 40px;align-items:start}
-footer b{color:var(--fg);font:700 1.6rem/1.3 var(--font-display);letter-spacing:-.02em}
+footer{padding-block:32px 40px;color:var(--muted);font-size:1rem;line-height:1.9}
+footer .wrap{display:flex;flex-wrap:wrap;gap:12px 40px;justify-content:space-between;align-items:flex-end}
+.f-right{display:grid;justify-items:end;gap:6px;text-align:right}
+.mini{display:block}
+.mini .eye{transform-box:fill-box;transform-origin:center;animation:blink 4.5s infinite}
+@keyframes blink{0%,90%,100%{transform:scaleY(1)}94%{transform:scaleY(.12)}}
+.f-copy{font-size:.88rem}
+footer b{color:var(--fg);font:700 2.6rem/1.2 var(--font-display);letter-spacing:-.02em}
 footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,20px);background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:999px;font-size:.9rem;opacity:0;pointer-events:none;transition:.2s;z-index:40}
 .toast.on{opacity:1;transform:translate(-50%,0)}
@@ -218,7 +223,7 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
 
 @media (max-width:820px){
   .certs{grid-template-columns:1fr}
-  .bgrid,footer .wrap{grid-template-columns:1fr}
+  .bgrid{grid-template-columns:1fr}
   .hero,.buy,.lesson,.design{grid-template-columns:1fr}
   .g3,.path{grid-template-columns:1fr}
   .photos{grid-template-columns:1fr 1fr}
@@ -234,7 +239,7 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
   .logo span{display:none}
   .photos figure img{aspect-ratio:4/5}
 }
-@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.toast{transition:none}}
+@media (prefers-reduced-motion:reduce){.mini .eye{animation:none}html{scroll-behavior:auto}.toast{transition:none}}
 </style>
 <style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
 </head>
@@ -580,9 +585,20 @@ void app_main(void) {
   <a class="btn go" href="#buy">구매 안내 보기</a>
 </div></div>
 <footer><div class="wrap">
-  <div><b>EyeKey</b><br>시선이 머무는 곳에, 키링<br>XIAO ESP32C3 · OLED · 57.0 × 45.05 mm</div>
-  <div><span class="f-tel">010-2484-3208</span><br>jyu-eyekey@nate.com<br>카카오뱅크 3333-34-4892029</div>
-  <div>© 2026 EyeKey</div>
+  <div class="f-brand"><b>EyeKey</b><br>시선이 머무는 곳에, 키링</div>
+  <div class="f-right">
+  <svg class="mini" viewBox="0 0 80 82" width="64" height="66" role="img" aria-label="EyeKey 캐릭터">
+    <path d="M31 17V9a9 9 0 0 1 18 0v8" fill="none" stroke="var(--ring)" stroke-width="5" stroke-linecap="round" transform="translate(0 4)"/>
+    <rect x="1" y="30" width="10" height="24" rx="5" fill="var(--case-blue)" opacity=".85"/>
+    <rect x="69" y="30" width="10" height="24" rx="5" fill="var(--case-blue)" opacity=".85"/>
+    <rect x="6" y="18" width="68" height="54" rx="14" fill="var(--case-blue)"/>
+    <rect x="12" y="24" width="56" height="42" rx="7" fill="#02050a"/>
+    <rect class="eye" x="25" y="36" width="10" height="17" rx="5" fill="#22d3ee"/>
+    <rect class="eye" x="45" y="36" width="10" height="17" rx="5" fill="#22d3ee"/>
+    <g fill="var(--foot)"><rect x="16" y="71" width="9" height="7" rx="3.5"/><rect x="27" y="71" width="9" height="7" rx="3.5"/><rect x="44" y="71" width="9" height="7" rx="3.5"/><rect x="55" y="71" width="9" height="7" rx="3.5"/></g>
+  </svg>
+  <div class="f-copy">© 2026 EyeKey</div>
+  </div>
 </div></footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
