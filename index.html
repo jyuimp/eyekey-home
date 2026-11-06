@@ -620,19 +620,51 @@ void app_main(void) {
 
 <script src="supabase-config.js"></script>
 <script type="module">
-  import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
   const config = window.EYEKEY_SUPABASE_CONFIG || {};
-  const sessionKey = 'eyekey-analytics-session';
-  const sessionId = sessionStorage.getItem(sessionKey) || (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  sessionStorage.setItem(sessionKey, sessionId);
-  if (config.url && config.publishableKey) {
+  const reportAnalyticsError = (message, error) => {
+    console.error(`[EyeKey analytics] ${message}`, error || '');
+    window.dispatchEvent(new CustomEvent('eyekey-analytics-error', { detail: { message, error } }));
+  };
+
+  const startAnalytics = async () => {
+    if (!config.url || !config.publishableKey) {
+      reportAnalyticsError('Supabase URL 또는 공개 키가 설정되지 않았습니다.');
+      return;
+    }
+
+    let createClient;
+    try {
+      ({ createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'));
+    } catch (error) {
+      reportAnalyticsError('Supabase 모듈을 불러오지 못했습니다.', error);
+      return;
+    }
+
+    let sessionId;
+    try {
+      const sessionKey = 'eyekey-analytics-session';
+      const randomId = window.crypto && typeof window.crypto.randomUUID === 'function' ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      sessionId = sessionStorage.getItem(sessionKey) || randomId;
+      sessionStorage.setItem(sessionKey, sessionId);
+    } catch (error) {
+      reportAnalyticsError('방문 세션을 초기화하지 못했습니다.', error);
+      return;
+    }
+
     const analytics = createClient(config.url, config.publishableKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
-    const send = (eventName, metadata) => analytics.from('analytics_events').insert({
-      event_name: eventName,
-      path: location.hash || '#home',
-      session_id: sessionId,
-      metadata: metadata || {}
-    });
+    const send = async (eventName, metadata) => {
+      try {
+        const { error } = await analytics.from('analytics_events').insert({
+          event_name: eventName,
+          path: location.hash || '#home',
+          session_id: sessionId,
+          metadata: metadata || {}
+        });
+        if (error) reportAnalyticsError(`${eventName} 이벤트 저장에 실패했습니다.`, error);
+      } catch (error) {
+        reportAnalyticsError(`${eventName} 이벤트 요청 중 오류가 발생했습니다.`, error);
+      }
+    };
     const pageView = () => { void send('page_view', { title: document.title }); };
     pageView();
     window.addEventListener('hashchange', pageView);
@@ -642,7 +674,9 @@ void app_main(void) {
       const label = (target.textContent || target.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 80);
       void send('click', { label, element: target.tagName.toLowerCase(), id: target.id || '' });
     }, { passive: true });
-  }
+  };
+
+  void startAnalytics();
 </script>
 <script>
 /* ---------- 설정: 여기만 고치면 됩니다 ---------- */
