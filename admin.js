@@ -9,6 +9,7 @@ const loginMessage = document.querySelector('[data-login-message]');
 const dashboardMessage = document.querySelector('[data-dashboard-message]');
 const range = document.querySelector('#range');
 let supabase;
+const LOGIN_TIMEOUT_MS = 15000;
 
 const $ = (selector) => document.querySelector(selector);
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[char]);
@@ -27,6 +28,20 @@ function setLoginMessage(text, type = 'info') {
   loginMessage.dataset.type = type;
   loginMessage.setAttribute('role', type === 'error' ? 'alert' : 'status');
   loginMessage.hidden = !text;
+}
+
+async function withTimeout(promise, milliseconds) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error('로그인 요청 시간이 초과되었습니다. 네트워크 연결을 확인해 주세요.')), milliseconds);
+      })
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function showApp(email) {
@@ -81,7 +96,10 @@ async function init() {
   loginForm.addEventListener('submit', async (event) => {
     event.preventDefault(); setLoginMessage('로그인 중입니다.');
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#password').value });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email: $('#email').value.trim(), password: $('#password').value }),
+        LOGIN_TIMEOUT_MS
+      );
       if (error) { setLoginMessage('로그인 정보를 확인해 주세요.', 'error'); return; }
       showApp(data.user.email);
     } catch (error) {
