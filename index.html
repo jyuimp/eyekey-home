@@ -151,8 +151,14 @@ tbody th{font-weight:500;color:var(--muted);width:30%}
 .certs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .cert{display:grid;grid-template-columns:78px 1fr;align-items:center;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;color:var(--fg);text-decoration:none;min-width:0}
 .cert:hover{border-color:var(--accent)}
-.cert img{width:78px;height:100px;object-fit:contain;background:var(--surface-2);display:block}
+.cert img{width:78px;height:100px;object-fit:contain;background:transparent;display:block}
+.lb{position:fixed;inset:0;z-index:60;background:rgb(5,8,12);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow:auto}
+.lb img{max-width:100%;max-height:calc(100vh - 80px);object-fit:contain;display:block}
+.lb .x{position:fixed;top:max(12px,env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));min-height:44px;min-width:44px;border-radius:999px;border:1px solid #ffffff55;background:#000a;color:#fff;font:700 1.2rem var(--font-body);cursor:pointer}
 .cinfo{align-content:center}
+.lb{position:fixed;inset:0;z-index:60;background:rgb(5,8,12);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));overflow:auto}
+.lb img{max-width:100%;max-height:calc(100vh - 80px);object-fit:contain;display:block}
+.lb .x{position:fixed;top:max(12px,env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));min-height:44px;min-width:44px;border-radius:999px;border:1px solid #ffffff55;background:#000a;color:#fff;font:700 1.2rem var(--font-body);cursor:pointer}
 .cinfo{padding:10px 14px;display:grid;gap:3px;align-content:center;min-width:0}
 .cinfo h3{font-size:1.05rem;line-height:1.35}
 .cinfo p{color:var(--muted);font-size:.85rem;line-height:1.5}
@@ -573,9 +579,9 @@ void app_main(void) {
     <div class="certs">
       <a class="cert big" href="img/certificate/coding-instructor-1.png" target="_blank" rel="noopener"><img src="img/certificate/coding-instructor-1.png" alt="코딩지도사 1급 자격증" width="907" height="772" loading="lazy">
         <div class="cinfo"><span class="chip ok">1급</span><h3>코딩지도사 1급</h3><p>한국자격검정평가진흥원<br>발급 2026년 10월 15일</p></div></a>
-      <a class="cert side" href="img/certificate/leader-certificate.jpg" target="_blank" rel="noopener"><img src="img/certificate/leader-thumb.jpg" alt="대한피구연맹 지도자 자격증" width="910" height="1286" loading="lazy">
+      <a class="cert side" href="img/certificate/leader-certificate-photo.jpg" target="_blank" rel="noopener"><img src="img/certificate/leader-thumb-photo.jpg" alt="대한피구연맹 지도자 자격증" width="910" height="1286" loading="lazy">
         <div class="cinfo"><span class="chip ok">3급</span><h3>피구 지도자</h3><p>사단법인 대한피구연맹<br>유효 2025.12.27 ~ 2029.12.26</p></div></a>
-      <a class="cert side" href="img/certificate/referee-certificate.jpg" target="_blank" rel="noopener"><img src="img/certificate/referee-thumb.jpg" alt="대한피구연맹 심판 자격증" width="910" height="1286" loading="lazy">
+      <a class="cert side" href="img/certificate/referee-certificate-photo.jpg" target="_blank" rel="noopener"><img src="img/certificate/referee-thumb-photo.jpg" alt="대한피구연맹 심판 자격증" width="910" height="1286" loading="lazy">
         <div class="cinfo"><span class="chip ok">3급</span><h3>피구 심판</h3><p>사단법인 대한피구연맹<br>유효 2025.12.27 ~ 2029.12.26</p></div></a>
     </div>
   </section>
@@ -609,6 +615,7 @@ void app_main(void) {
   <div class="f-copy">© 2026 EyeKey</div>
   </div>
 </div></footer>
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="자격증 원본"><button class="x" id="lbx" type="button" aria-label="닫기">✕</button><img id="lbimg" alt=""></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -647,6 +654,16 @@ document.addEventListener('click', function(e){
   var b = e.target.closest('[data-copy]'); if(b){ copyText(b.getAttribute('data-copy')); return; }
   var c = e.target.closest('[data-copy-code]'); if(c){ copyText(c.parentNode.querySelector('code').textContent, '코드를 복사했습니다'); }
 });
+
+/* ---------- 자격증 보기(배경 위에 바로 표시) ---------- */
+var lb = $('#lb'), lbImg = $('#lbimg'), lastCert = null;
+function closeLb(){ lb.hidden = true; lbImg.removeAttribute('src'); if(lastCert) lastCert.focus(); }
+document.addEventListener('click', function(e){
+  var c = e.target.closest('.cert');
+  if(c){ e.preventDefault(); lastCert = c; lbImg.src = c.getAttribute('href'); lbImg.alt = c.querySelector('img').alt; lb.hidden = false; $('#lbx').focus(); return; }
+  if(e.target === lb || e.target.closest('#lbx')) closeLb();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !lb.hidden) closeLb(); });
 
 /* ---------- 화면 전환 ---------- */
 var VIEWS = ['home','buy','resources','learn'];
