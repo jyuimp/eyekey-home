@@ -1,0 +1,20 @@
+{
+    "name":  "EyeKey",
+    "default":  "c3",
+    "targets":  [
+                    {
+                        "label":  "ESP32-C3",
+                        "chipFamily":  "ESP32-C3",
+                        "path":  "c3/",
+                        "id":  "c3",
+                        "version":  "b744763"
+                    },
+                    {
+                        "label":  "ESP32-C6",
+                        "chipFamily":  "ESP32-C6",
+                        "path":  "c6/",
+                        "id":  "c6",
+                        "version":  "b744763"
+                    }
+                ]
+}

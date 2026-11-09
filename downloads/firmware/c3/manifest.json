@@ -1,0 +1,16 @@
+{
+    "name":  "EyeKey",
+    "version":  "b744763",
+    "new_install_prompt_erase":  true,
+    "builds":  [
+                   {
+                       "chipFamily":  "ESP32-C3",
+                       "parts":  [
+                                     {
+                                         "path":  "eyekey_factory.bin",
+                                         "offset":  0
+                                     }
+                                 ]
+                   }
+               ]
+}

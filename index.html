@@ -266,7 +266,7 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
     <span>EyeKey</span>
   </a>
   <nav aria-label="주 메뉴">
-    <a href="#home">소개</a><a href="#buy">구매</a><a href="#resources">자료실</a><a href="#learn">교육</a>
+    <a href="#home">소개</a><a href="#buy">구매</a><a href="#resources">자료실</a><a href="#flash">업데이트</a><a href="#learn">교육</a>
   </nav>
 </div></header>
 
@@ -587,6 +587,105 @@ void app_main(void) {
   </section>
 </div>
 
+<!-- ============ 펌웨어 업데이트 ============ -->
+<div data-view="flash">
+  <style>
+    [data-view="flash"]{--fw-danger:#fb7185}
+    [data-view="flash"] .fw-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:start}
+    @media (min-width:980px){[data-view="flash"] .fw-layout{grid-template-columns:minmax(0,1.05fr) minmax(20rem,.95fr)}[data-view="flash"] .fw-log{position:sticky;top:calc(env(safe-area-inset-top,0px) + 72px)}}
+    [data-view="flash"] .card{margin:0 0 14px}
+    [data-view="flash"] .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px}
+    [data-view="flash"] .btn.primary.fw{background:var(--ok);border-color:var(--ok);color:#04220f}
+    [data-view="flash"] .btn.destructive{background:transparent;border-color:var(--fw-danger);color:var(--fw-danger);font-weight:700}
+    [data-view="flash"] .btn.destructive:hover{background:color-mix(in srgb,var(--fw-danger) 12%,transparent)}
+    [data-view="flash"] .badge{font:600 .78rem/1.4 var(--font-body);padding:2px 8px;border:1px solid var(--line);border-radius:999px;color:var(--muted)}
+    [data-view="flash"] pre{border:1px solid #2b3f55;border-radius:12px;padding:12px;overflow:auto;white-space:pre-wrap;font:500 .85rem/1.55 var(--font-mono);margin:8px 0 0}
+    [data-view="flash"] #fw-log{min-height:16rem;max-height:58vh;background:#0b1220;color:#d7e6f7}
+    [data-view="flash"] #fw-log::selection{background:#264a6e}
+    [data-view="flash"] progress{width:100%;height:10px;margin-top:8px;accent-color:var(--ok);background:var(--surface-2);border:1px solid var(--line);border-radius:999px}
+    [data-view="flash"] .status{font-size:.92rem;color:var(--muted);margin:6px 0 0}
+    [data-view="flash"] .hidden{display:none!important}
+    [data-view="flash"] .target-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    [data-view="flash"] select{font:inherit;min-height:40px;padding:0 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg)}
+    [data-view="flash"] ol{margin:8px 0 0 1.2rem;color:var(--muted)} [data-view="flash"] li{margin:4px 0}
+    [data-view="flash"] table{border-collapse:collapse;width:100%;font-size:.92rem}
+    [data-view="flash"] th,[data-view="flash"] td{text-align:left;padding:8px;border-bottom:1px solid var(--line)}
+    [data-view="flash"] code{font-family:var(--font-mono);font-size:.88em}
+  </style>
+  <section>
+    <div class="sec-head">
+      <span class="eyebrow">Update</span>
+      <h1 style="font-size:clamp(1.9rem,6vw,2.7rem)">펌웨어 업데이트</h1>
+      <p class="muted">USB-C로 연결하고 브라우저에서 바로 업데이트합니다. Python이나 개발 도구 설치가 필요 없습니다.</p>
+      <p class="muted" style="margin-top:6px">릴리스 <span id="fw-version" class="badge">확인 중…</span> <span id="fw-chip" class="badge hidden"></span> <span id="fw-target-label" class="badge hidden"></span></p>
+    </div>
+
+    <div class="fw-layout">
+      <div>
+        <div id="fw-target-card" class="card hidden">
+          <h2 style="margin:0 0 8px;font-size:1.08rem">0. 기기 선택 (C3 / C6)</h2>
+          <p class="muted" style="margin:0">내 EyeKey 보드에 맞는 칩을 선택하세요. C6 런타임 실기 검증은 보류 상태입니다(C3 중심).</p>
+          <div class="target-row" style="margin-top:10px">
+            <label for="fw-target"><strong>대상</strong></label>
+            <select id="fw-target" aria-label="대상 칩 선택"></select>
+            <span class="status" id="fw-target-status" style="margin:0"></span>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:1.08rem">1. USB 연결</h2>
+          <ol>
+            <li>USB-C 데이터 케이블로 EyeKey를 PC에 연결합니다.</li>
+            <li>POWER 스위치가 <strong>OFF여도</strong> 업데이트할 수 있습니다.</li>
+            <li>인식되지 않으면 BOOT(GPIO9) 패드를 누른 채 다시 연결합니다.</li>
+            <li>브라우저: 데스크톱 Chrome / Edge (HTTPS 필요, iOS Safari 미지원).</li>
+          </ol>
+          <div class="actions">
+            <button id="fw-connect" class="btn" type="button">기기 연결</button>
+            <button id="fw-repick" class="btn" type="button">포트 다시 선택</button>
+          </div>
+          <p class="status" id="fw-conn">연결되지 않음</p>
+          <p class="status">시리얼 모니터(idf.py monitor, VS Code 시리얼, PuTTY 등)는 닫아주세요.</p>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:1.08rem">2. 업데이트 (앱만 교체)</h2>
+          <p class="muted" style="margin:0">설정(NVS)과 사용자 팩을 <strong>유지</strong>하고 앱만 교체합니다. 일반 업데이트에 사용하세요.</p>
+          <div class="actions"><button id="fw-app" class="btn primary fw" type="button" disabled>업데이트 시작</button></div>
+          <p class="status">파일: <code id="fw-app-path">eyekey_app.bin</code> → <code>0x10000</code></p>
+        </div>
+
+        <div class="card" style="border-color:color-mix(in srgb,var(--fw-danger) 45%,var(--line))">
+          <h2 style="margin:0 0 8px;font-size:1.08rem;color:var(--fw-danger)">3. 전체 복구 (공장 초기화)</h2>
+          <p class="muted" style="margin:0"><strong>플래시 전체를 지우고</strong> 다시 씁니다. <strong>사용자 팩과 설정이 삭제</strong>됩니다. 부팅 불가 시에만 사용하세요.</p>
+          <div class="actions"><button id="fw-full" class="btn destructive" type="button" disabled>전체 복구 시작</button></div>
+          <p class="status">파일: <code id="fw-factory-path">eyekey_factory.bin</code> → <code>0x0</code></p>
+        </div>
+
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:1.08rem">안내</h2>
+          <table>
+            <thead><tr><th>파일</th><th>오프셋</th><th>용도</th></tr></thead>
+            <tbody>
+              <tr><td><code>eyekey_app.bin</code></td><td><code>0x10000</code></td><td>앱만 교체, NVS/팩 유지</td></tr>
+              <tr><td><code>eyekey_factory.bin</code></td><td><code>0x0</code></td><td>전체 복구/양산</td></tr>
+            </tbody>
+          </table>
+          <p class="status">이 페이지는 배포된 홈페이지(HTTPS) 또는 로컬 서버에서 동작합니다. 펌웨어 파일은 이 사이트의 <code>downloads/firmware/</code>에서 로드됩니다.</p>
+        </div>
+      </div>
+
+      <aside class="fw-log">
+        <div class="card">
+          <h2 style="margin:0 0 8px;font-size:1.08rem">진행 상황 / 로그</h2>
+          <progress id="fw-progress" value="0" max="100" class="hidden"></progress>
+          <pre id="fw-log">대기 중…</pre>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
 </main>
 
 <div class="band"><div class="wrap">
@@ -685,7 +784,7 @@ var CONFIG = {
   holder: '',           // 예금주 이름을 입력하면 표시됩니다
   files: [
     { group:'펌웨어', title:'EyeKey 펌웨어', desc:'표정과 깜빡임 기본 펌웨어 (ESP-IDF 프로젝트)', type:'ZIP', url:'' },
-    { group:'펌웨어', title:'펌웨어 바이너리', desc:'빌드 없이 바로 올리는 .bin 파일', type:'BIN', url:'' },
+    { group:'펌웨어', title:'펌웨어 웹 업데이트', desc:'브라우저에서 C3/C6 선택 후 USB로 바로 업데이트 (Chrome/Edge)', type:'WEB', url:'#flash' },
     { group:'펌웨어', title:'변경 내역', desc:'버전별 추가 기능과 수정 사항', type:'TXT', url:'' },
     { group:'매뉴얼', title:'사용 설명서', desc:'처음 켜는 방법, 표정 바꾸기, 주의 사항', type:'PDF', url:'' },
     { group:'매뉴얼', title:'펌웨어 업데이트 가이드', desc:'VS Code와 ESP-IDF 설정부터 업로드까지', type:'PDF', url:'' },
@@ -726,7 +825,7 @@ document.addEventListener('click', function(e){
 document.addEventListener('keydown', function(e){ if(e.key === 'Escape' && !lb.hidden) closeLb(); });
 
 /* ---------- 화면 전환 ---------- */
-var VIEWS = ['home','buy','resources','learn'];
+var VIEWS = ['home','buy','resources','flash','learn'];
 function route(){
   var h = (location.hash||'').replace('#','');
   if(VIEWS.indexOf(h) < 0) h = 'home';
@@ -734,6 +833,7 @@ function route(){
   $$('nav a').forEach(function(a){ if(a.getAttribute('href') === '#'+h) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
   window.scrollTo(0,0);
   if(h === 'home') startEyes(); else stopEyes();
+  if(h === 'flash' && window.__eyekeyInitFlash) window.__eyekeyInitFlash();
 }
 window.addEventListener('hashchange', route);
 
@@ -854,9 +954,9 @@ if(CONFIG.holder){ $('#holder').textContent = CONFIG.holder; $('#holderRow').hid
   order.forEach(function(g){
     html += '<div class="group"><h2>' + g + '</h2><div class="files">';
     groups[g].forEach(function(f){
-      var ready = !!f.url;
+      var ready = !!f.url, isHash = ready && f.url.charAt(0) === '#';
       html += '<div class="file"><div><h3>' + f.title + ' <span class="chip">' + f.type + '</span>' + (ready ? '' : ' <span class="chip wip">준비 중</span>') + '</h3><p>' + f.desc + '</p></div>' +
-        (ready ? '<a class="btn small primary" href="' + f.url + '" target="_blank" rel="noopener" download>다운로드</a>' : '<span class="btn small" aria-disabled="true">준비 중</span>') + '</div>';
+        (ready ? '<a class="btn small primary" href="' + f.url + '"' + (isHash ? '' : ' target="_blank" rel="noopener" download') + '>' + (isHash ? '열기' : '다운로드') + '</a>' : '<span class="btn small" aria-disabled="true">준비 중</span>') + '</div>';
     });
     html += '</div></div>';
   });
@@ -864,6 +964,167 @@ if(CONFIG.holder){ $('#holder').textContent = CONFIG.holder; $('#holderRow').hid
 })();
 
 route();
+</script>
+
+<script type="module">
+(() => {
+  const APP_OFFSET = 0x10000, FACTORY_OFFSET = 0x0, APP_MAX = 1536 * 1024, ESP_MAGIC = 0xe9;
+  const ESPTOOL_URL = 'https://unpkg.com/esptool-js@0.7.0/bundle.js';
+  const FW_ROOT = './downloads/firmware/';
+  const $id = (id) => document.getElementById(id);
+  const logEl = $id('fw-log'), progressEl = $id('fw-progress');
+  const btnConnect = $id('fw-connect'), btnRepick = $id('fw-repick'), btnApp = $id('fw-app'), btnFull = $id('fw-full');
+  const targetCard = $id('fw-target-card'), targetSelect = $id('fw-target'), targetStatus = $id('fw-target-status');
+  if (!logEl || !btnConnect) return; // not on a page with flash view
+
+  let esptool=null, transport=null, loader=null, device=null, busy=false, basePath=FW_ROOT, expectedFamily='', targetsConfig=null, targetsBase=FW_ROOT, inited=false;
+
+  function log(msg){ const t=new Date().toLocaleTimeString(); logEl.textContent += `\n[${t}] ${msg}`; logEl.scrollTop = logEl.scrollHeight; }
+  function raw(t){ logEl.textContent += t; logEl.scrollTop = logEl.scrollHeight; }
+  function targetReady(){ return !!expectedFamily || !targetsConfig; }
+  function updateButtons(){ const ready=!!loader; btnConnect.disabled=busy||ready; btnRepick.disabled=busy; btnApp.disabled=busy||!ready||!targetReady(); btnFull.disabled=busy||!ready||!targetReady(); targetSelect.disabled=busy; }
+  function setBusy(v){ busy=v; updateButtons(); }
+  function setProgress(done,total){ if(!total) return; progressEl.classList.remove('hidden'); progressEl.value=Math.round((done/total)*100); }
+  const sleep = (ms)=>new Promise(r=>setTimeout(r,ms));
+  function assetPath(name){ const b=basePath.endsWith('/')?basePath:`${basePath}/`; return `${b}${name}`; }
+  function updateLabels(){ $id('fw-app-path').textContent=assetPath('eyekey_app.bin'); $id('fw-factory-path').textContent=assetPath('eyekey_factory.bin'); }
+  function setFamily(family,label){ expectedFamily=family||''; const b=$id('fw-chip'); if(expectedFamily){b.textContent=expectedFamily;b.classList.remove('hidden');}else{b.classList.add('hidden');b.textContent='';} const tl=$id('fw-target-label'); if(label){tl.textContent=label;tl.classList.remove('hidden');}else{tl.classList.add('hidden');tl.textContent='';} updateLabels(); updateButtons(); }
+
+  async function loadManifest(){
+    try {
+      const res = await fetch(assetPath('manifest.json'), {cache:'no-store'});
+      if(!res.ok) throw new Error(`HTTP ${res.status}`);
+      const m = await res.json();
+      $id('fw-version').textContent = m.version ? `v${m.version}` : 'version ?';
+      const fam = m.builds?.[0]?.chipFamily || expectedFamily;
+      setFamily(fam, targetsConfig ? (targetSelect.selectedOptions[0]?.textContent||'') : '');
+      log(`릴리스: ${$id('fw-version').textContent} / ${fam||'chip ?'} (${assetPath('manifest.json')})`);
+    } catch(e){ $id('fw-version').textContent='펌웨어 정보 없음'; setFamily('',''); log(`펌웨어 정보를 읽지 못했습니다: ${e.message} (${assetPath('manifest.json')})`); }
+  }
+
+  async function detach(){ try{ await transport?.disconnect(); }catch{} transport=null; loader=null; $id('fw-conn').textContent='연결되지 않음'; updateButtons(); }
+  async function applyTarget(t){
+    if(!t) return;
+    await detach();
+    basePath = (targetsBase + (t.path||'')).replace(/([^:])\/\/+/g,'$1/');
+    targetStatus.textContent = t.version ? `v${t.version}` : '';
+    log(`대상 선택: ${t.chipFamily||t.id} (${basePath})`);
+    setFamily(t.chipFamily||'', t.label||t.chipFamily||t.id);
+    await loadManifest();
+  }
+
+  async function loadTargets(){
+    const candidates = [FW_ROOT + 'targets.json', './targets.json'];
+    for (const url of candidates) {
+      try {
+        const res = await fetch(url, {cache:'no-store'});
+        if(!res.ok) continue;
+        const cfg = await res.json();
+        const targets = Array.isArray(cfg.targets) ? cfg.targets : [];
+        if(targets.length===0) continue;
+        targetsConfig = cfg;
+        targetsBase = url.replace(/targets\.json$/,'');
+        targetSelect.innerHTML='';
+        for(const t of targets){
+          const o=document.createElement('option');
+          o.value=t.id||t.chipFamily||t.path; o.textContent=t.label||t.chipFamily||o.value;
+          o.dataset.path=t.path||`${o.value}/`; o.dataset.family=t.chipFamily||''; o.dataset.version=t.version||'';
+          targetSelect.appendChild(o);
+        }
+        targetCard.classList.remove('hidden');
+        const def = cfg.default || (targets.find(t=>/c3/i.test(t.id||t.chipFamily||''))?.id) || targets[0].id;
+        if(def) targetSelect.value=def;
+        targetSelect.addEventListener('change',()=>{
+          const o=targetSelect.selectedOptions[0];
+          applyTarget({id:o.value,label:o.textContent,path:o.dataset.path,chipFamily:o.dataset.family,version:o.dataset.version}).catch(e=>log(`대상 전환 실패: ${e.message}`));
+        });
+        const o=targetSelect.selectedOptions[0];
+        await applyTarget({id:o.value,label:o.textContent,path:o.dataset.path,chipFamily:o.dataset.family,version:o.dataset.version});
+        return;
+      } catch {}
+    }
+    basePath = FW_ROOT; await loadManifest();
+  }
+
+  async function loadBinary(name){
+    const res = await fetch(assetPath(name), {cache:'no-store'});
+    if(!res.ok) throw new Error(`${name} 없음 (HTTP ${res.status}) @ ${assetPath(name)}`);
+    const data = new Uint8Array(await res.arrayBuffer());
+    if(data[0]!==ESP_MAGIC) throw new Error(`${name}이 ESP 이미지가 아닙니다`);
+    return data;
+  }
+  function portDesc(d){ const i=d?.getInfo?.()??{}; if(!i.usbVendorId) return '포트 선택됨'; const v=i.usbVendorId.toString(16).padStart(4,'0'), p=(i.usbProductId??0).toString(16).padStart(4,'0'); return `VID 0x${v} / PID 0x${p}${i.usbVendorId===0x303a?' (Espressif)':''}`; }
+  function errMsg(e){ return e instanceof Error ? `${e.name}: ${e.message}` : String(e); }
+  function hint(e){ const m=String(e?.message??e);
+    if(/No port selected|NotFoundError/i.test(m)) return '포트 선택이 취소되었습니다. "기기 연결"을 다시 누르세요.';
+    if(/Failed to open serial port|NetworkError|Access denied|in use|busy/i.test(m)) return '다른 프로그램이 포트를 사용 중입니다. 시리얼 모니터를 닫고 다시 시도하세요.';
+    if(/Failed to connect|timed out|Timeout/i.test(m)) return '응답 없음. BOOT(GPIO9)를 누른 채 USB를 다시 연결해 보세요.';
+    if(/Wrong boot mode/i.test(m)) return '다운로드 모드가 아닙니다. BOOT(GPIO9)를 누른 채 연결하세요.';
+    return '';
+  }
+
+  async function openPort(force){
+    if(!force){ const g=await navigator.serial.getPorts(); const esp=g.filter(p=>p.getInfo?.().usbVendorId===0x303a); if(esp.length===1){log('이전에 허용한 Espressif 포트를 사용합니다.'); return esp[0];} if(g.length>0){log(`허용된 포트 ${g.length}개 중 1개 사용. 다른 포트는 "포트 다시 선택".`); return g[0];} }
+    return navigator.serial.requestPort();
+  }
+  async function attach(dev, resetMode){
+    transport = new esptool.Transport(dev,false);
+    loader = new esptool.ESPLoader({transport, baudrate:460800, terminal:{clean(){}, write:(d)=>raw(String(d)), writeLine:(d)=>log(String(d).trim())}});
+    return loader.main(resetMode);
+  }
+  async function connect(force=false){
+    if(!('serial' in navigator)) throw new Error('이 브라우저는 Web Serial을 지원하지 않습니다. 데스크톱 Chrome/Edge, HTTPS/localhost가 필요합니다.');
+    if(!esptool){ log('esptool-js 로드 중…'); esptool = await import(ESPTOOL_URL); }
+    device = await openPort(force); log(`선택한 포트: ${portDesc(device)}`);
+    let chip; try{ log('기기 감지 중…'); chip=await attach(device); } catch(e1){ log(`기본 리셋 실패: ${errMsg(e1)}`); await detach(); log('USB 리셋으로 재시도…'); try{ chip=await attach(device,'usb_reset'); } catch(e2){ await detach(); throw e2; } }
+    log(`연결됨: ${chip}`);
+    if(expectedFamily && !String(chip).toUpperCase().includes(expectedFamily.replace('ESP32-',''))) log(`경고: 선택 릴리스는 ${expectedFamily}, 기기는 ${chip}. 대상을 확인하세요.`);
+    $id('fw-conn').textContent=`연결됨: ${chip} (${portDesc(device)})`; updateButtons();
+  }
+  async function hardReset(){
+    if(!transport) return false;
+    const native = device?.getInfo?.().usbVendorId===0x303a;
+    try{ if(native){ log('재시작 중 (USB-JTAG)…'); await transport.setSignals(false,true); await sleep(200); await transport.setSignals(false,false); await sleep(200);} else { log('재시작 중…'); await loader.after('hard_reset'); } return true; }
+    catch(e){ log(`리셋 경고: ${errMsg(e)}`); return false; }
+  }
+  async function resetAndClose(){ let r=false; if(loader||transport) r=await hardReset(); await detach(); return r; }
+
+  async function flash(kind){
+    if(busy) return;
+    if(!expectedFamily && targetsConfig){ log('오류: C3/C6 대상을 먼저 선택하세요.'); return; }
+    setBusy(true); progressEl.classList.add('hidden'); progressEl.value=0;
+    try{
+      if(!loader) await connect();
+      const app = kind==='app', name = app?'eyekey_app.bin':'eyekey_factory.bin', addr = app?APP_OFFSET:FACTORY_OFFSET;
+      log(`${assetPath(name)} 읽는 중…`);
+      const data = await loadBinary(name);
+      if(app && data.length>APP_MAX) throw new Error(`${name}이 앱 파티션(1.5MB)보다 큽니다: ${data.length} B`);
+      if(!app && !window.confirm(`전체 복구는 사용자 팩/설정을 모두 삭제합니다.\n대상: ${expectedFamily||'선택 릴리스'}\n계속할까요?`)){ log('전체 복구 취소.'); return; }
+      log(`${app?'앱만':'전체'} 쓰기: ${expectedFamily||''} ${name} (${data.length.toLocaleString()} B @ 0x${addr.toString(16)})`);
+      await loader.writeFlash({fileArray:[{data,address:addr}], flashSize:'keep', flashMode:'keep', flashFreq:'keep', eraseAll:!app, compress:true, reportProgress:(_i,w,t)=>setProgress(w,t)});
+      log('쓰기 완료. 재부팅…');
+      const r = await resetAndClose();
+      log(r ? '완료. 기기가 재시작됩니다. 화면이 그대로면 USB를 다시 꽂으세요.' : '쓰기 완료. 자동 재시작 실패 시 USB를 다시 꽂거나 RESET을 누르세요.');
+    } catch(e){ log(`오류: ${errMsg(e)}`); const h=hint(e); if(h) log(`→ ${h}`); await detach(); }
+    finally{ setBusy(false); }
+  }
+
+  async function startConnect(force){ if(busy) return; setBusy(true); try{ await connect(force); } catch(e){ log(`연결 실패: ${errMsg(e)}`); const h=hint(e); if(h) log(`→ ${h}`);} finally{ setBusy(false); } }
+
+  async function init(){
+    if(inited) return; inited=true;
+    updateLabels(); updateButtons();
+    if(!('serial' in navigator)){ btnConnect.disabled=true; log('Web Serial 미지원. Chrome/Edge(HTTPS 또는 localhost)에서 사용하세요.'); }
+    else log('준비됨. 대상(C3/C6) 확인 후 "기기 연결"을 누르세요.');
+    await loadTargets(); updateButtons();
+  }
+  window.__eyekeyInitFlash = init;
+  btnConnect.addEventListener('click',()=>startConnect(false));
+  btnRepick.addEventListener('click',()=>startConnect(true));
+  btnApp.addEventListener('click',()=>flash('app'));
+  btnFull.addEventListener('click',()=>flash('full'));
+  if((location.hash||'').replace('#','')==='flash') init();
+})();
 </script>
 
 </body>
