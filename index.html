@@ -64,7 +64,7 @@ p{margin:0}
 h1{font-weight:700}
 .muted{color:var(--muted)}
 .eyebrow{font:700 .8rem/1.4 var(--font-body);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
-section{padding-block:clamp(36px,7vw,68px)}
+section{padding-block:clamp(24px,4.5vw,46px)}
 .sec-head{display:grid;gap:10px;margin-bottom:28px;max-width:60ch}
 
 /* header */
@@ -114,10 +114,9 @@ nav a:not([aria-current="page"]):hover{color:var(--fg);background:var(--surface-
 .hint{font-size:.88rem;color:var(--muted)}
 
 /* photos */
-.photos{display:grid;grid-template-columns:2.11fr 1.59fr .51fr;gap:12px;align-items:start}
+.photos{display:grid;grid-template-columns:1.59fr .88fr .51fr 2.1fr;gap:12px;align-items:start;max-width:940px;margin-inline:auto}
 figure{margin:0;display:grid;gap:8px;min-width:0}
-figure img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius);display:block;background:var(--surface)}
-.photos img{height:auto}
+figure img{width:100%;height:auto;object-fit:contain;object-position:center;border-radius:var(--radius);display:block;background:var(--surface)}
 figcaption{font-size:.9rem;color:var(--muted)}
 
 /* features */
@@ -241,10 +240,9 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
   .bgrid{grid-template-columns:1fr}
   .hero,.buy,.lesson,.design{grid-template-columns:1fr}
   .g3,.path{grid-template-columns:1fr}
-  .photos{grid-template-columns:1fr 1fr}
-  .photos figure:first-child{grid-column:1/-1}
-  .photos figure:first-child img{aspect-ratio:2/1}
-  .photos figure img{aspect-ratio:1}
+}
+@media (max-width:760px){
+  .photos{grid-template-columns:1fr 1fr;gap:10px}
 }
 @media (max-width:520px){
   table{min-width:0;font-size:.88rem}
@@ -252,7 +250,8 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
   .g2,.fields{grid-template-columns:1fr}
   .file{grid-template-columns:1fr}
   .logo span{display:none}
-  .photos figure img{aspect-ratio:4/5}
+  .photos{gap:8px}
+  figcaption{font-size:.82rem}
 }
 @media (prefers-reduced-motion:reduce){.mini .eye{animation:none}html{scroll-behavior:auto}.toast{transition:none}}
 </style>
@@ -303,9 +302,10 @@ footer .f-tel{color:var(--fg);font-weight:700;font-size:1.2rem}
 
   <section>
     <div class="photos">
-      <figure><img src="img/product/eyekey_case_jacket_paws_01.png" alt="그린과 블루 링의 EyeKey 프로토타입 두 개, 노란 눈과 하늘색 화면" width="319" height="149"><figcaption>EyeKey 프로토타입 두 개</figcaption></figure>
       <figure><img src="img/product/dark.jpg" alt="어두운 곳에서 빛나는 EyeKey 두 개" width="969" height="610"><figcaption>어두운 곳에서 더 또렷하게</figcaption></figure>
+      <figure><img src="img/product/pair_02.png" alt="EyeKey와 키링 구성을 함께 담은 모습" width="432" height="490"><figcaption>키링과 함께</figcaption></figure>
       <figure><img src="img/product/hand.jpg" alt="손에 든 블루 EyeKey 키링" width="284" height="556"><figcaption>손에 쏙 들어오는 크기</figcaption></figure>
+      <figure><img src="img/product/eyekey_case_jacket_paws_01.png" alt="그린과 블루 링의 EyeKey 프로토타입 두 개, 노란 눈과 하늘색 화면" width="662" height="316"><figcaption>EyeKey 프로토타입 두 개</figcaption></figure>
     </div>
   </section>
 
